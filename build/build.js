@@ -1,9 +1,35 @@
+var startingYr;
+var maxSize;
+var radius;
+var dobMonth = 12 * 21 + 8;
+var monthsInYear = 12;
+var daysInMonth = new Map([[1, 31], [2, 28], [3, 31], [4, 30], [5, 31], [6, 30], [7, 31], [8, 31], [9, 30], [10, 31], [11, 30], [12, 31]]);
+var hoursInDay = 24;
+var minsInHour = 60;
+var secsInMinute = 60;
+var winterSwatch;
+var springSwatch;
+var summerSwatch;
+var fallSwatch;
 function setup() {
+    winterSwatch = color(201, 227, 247);
+    springSwatch = color(216, 233, 221);
+    summerSwatch = color(239, 230, 234);
+    fallSwatch = color(240, 225, 209);
+    var startYrProgress = calcProgressThruYear();
+    var startLerpColor = calcColorLerp(startYrProgress);
     createCanvas(windowWidth, windowHeight);
-    background(255);
+    maxSize = min(windowWidth, windowHeight);
+    colorMode(RGB);
+    frameRate(1);
+    background(startLerpColor);
     stroke(20);
     strokeWeight(1);
     noFill();
+    startingYr = (year() - 2001);
+    radius = startingYr * 5;
+    console.log(radius);
+    drawRings(startingYr);
 }
 function windowResized() {
     resizeCanvas(windowWidth, windowHeight);
@@ -11,9 +37,7 @@ function windowResized() {
 var scaleVar = 50;
 var resolution = 0.002;
 var numPoints = 500;
-var radius = 150;
-var numRings = 40;
-function draw() {
+function drawRings(numRings) {
     for (var r = 0; r < radius; r += radius / numRings) {
         beginShape();
         for (var a = -TAU / numPoints; a < TAU + TAU / numPoints; a += TAU / numPoints) {
@@ -28,6 +52,42 @@ function draw() {
         }
         endShape();
     }
-    noLoop();
+}
+function calcProgressThruYear() {
+    var minuteProgress = second() / secsInMinute;
+    var hourProgress = (minute() + minuteProgress) / minsInHour;
+    var dayProgress = (hour() + hourProgress) / hoursInDay;
+    return (month() + ((day() + dayProgress) / daysInMonth.get(month()))) / monthsInYear;
+}
+function calcColorLerp(yearProg) {
+    var seasonProg;
+    if (yearProg <= 0.25) {
+        console.log("winter");
+        seasonProg = yearProg / .25;
+        return lerpColor(winterSwatch, springSwatch, seasonProg);
+    }
+    else if (yearProg <= 0.50) {
+        console.log("spring");
+        seasonProg = (yearProg - 0.25) / .25;
+        return lerpColor(springSwatch, summerSwatch, seasonProg);
+    }
+    else if (yearProg <= 0.75) {
+        console.log("summer");
+        seasonProg = (yearProg - 0.5) / .25;
+        return lerpColor(summerSwatch, fallSwatch, seasonProg);
+    }
+    else {
+        console.log("fall");
+        return lerpColor(fallSwatch, winterSwatch, yearProg);
+    }
+}
+function draw() {
+    var yearProg = calcProgressThruYear();
+    var seasonProg = calcColorLerp(yearProg);
+    background(seasonProg);
+    console.log();
+    var addlRings = (minute() * second() / year());
+    radius += addlRings;
+    drawRings(startingYr + addlRings / 2);
 }
 //# sourceMappingURL=build.js.map
