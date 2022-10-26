@@ -3,9 +3,8 @@
 let startingYr : number
 let growth : number = 0
 let maxSize : number
-let radius : number
+//let radius : number
 let yearSelect : p5.Element
-let dobMonth = 12 * 21 + 8
 const monthsInYear = 12
 const daysInMonth : Map<number, number> = new Map<number, number>([[1, 31], [2, 28], [3, 31], [4, 30], [5, 31], [6, 30], [7, 31], [8, 31], [9, 30], [10, 31], [11, 30], [12, 31]])
 const hoursInDay = 24
@@ -16,8 +15,39 @@ let springSwatch: p5.Color
 let summerSwatch: p5.Color
 let fallSwatch: p5.Color
 let dummyMonth = 0
-let dummyYr = 0
 
+interface Ring {
+  shapeXs: Array<number>
+  shapeYs: Array<number>
+  shapeNs: Array<number>
+}
+
+interface Tree {
+  rings: Array<Ring>
+  startingYr: number
+  radius: number
+}
+
+let tree: Tree = {rings: new Array<Ring>(), startingYr: 2001, radius: 0}
+
+function calcRadiusPerRing() {
+  return tree.radius / tree.rings.length
+}
+
+function drawRingsViaInterface() {
+  let r = 0
+  let radiusPerRing = calcRadiusPerRing()
+  tree.rings.forEach(ring => {
+    //console.log(ring)
+    beginShape()
+    r += radiusPerRing
+    for (let i = 0; i < ring.shapeNs.length; i++) {
+      //console.log(ring)
+      curveVertex(ring.shapeXs[i] + ring.shapeNs[i], ring.shapeYs[i] + ring.shapeNs[i])
+      endShape()
+  }
+})
+}
 
 function setup() {
   winterSwatch = color(201, 227, 247)
@@ -41,9 +71,10 @@ function setup() {
   }
   yearSelect.changed(onYoBSelected)
   startingYr = (year() - 2001) 
-  radius = startingYr * 5
-  console.log(radius)
-  drawRings(startingYr)
+  let foo = startingYr * 5
+  //console.log(radius)
+  calcRings(startingYr, foo)
+  drawRingsViaInterface()
 }
 
 function windowResized() { 
@@ -53,12 +84,14 @@ function windowResized() {
 function onYoBSelected() {
   let yearSelected = yearSelect.value() as number
   startingYr = year() - yearSelected
-  if (startingYr * 5 >= maxSize) {
-    radius = startingYr
+  if (startingYr * 5 >= maxSize / 2) {
+    let foo = startingYr * 3
+    calcRings(startingYr, foo)
   } else {
-    radius = startingYr * 5
+    let foo = startingYr * 5
+    calcRings(startingYr, foo)
   }
-  drawRings(startingYr)
+  drawRingsViaInterface()
 }
 
 
@@ -66,23 +99,29 @@ let scaleVar = 50
 let resolution = 0.002
 let numPoints = 500
 
-function drawRings(numRings : number) {
-  for (let r = 0; r < radius; r += radius / numRings) {
-    beginShape()
+function calcRings(numNewRings : number, newRadius: number) {
+  for (let r = tree.radius; r < tree.radius + newRadius; r += newRadius / numNewRings) {
+    let shapeXs = Array<number>()
+    let shapeYs = Array<number>()
+    let shapeNs = Array<number>()
     for (let a = -TAU / numPoints; a < TAU + TAU / numPoints; a += TAU / numPoints) {
       let x = width / 2 + r * cos(a)
       let y = height / 2 + r * sin(a)
       let n = map(noise(x * resolution, y * resolution), 0, 1, -scaleVar, scaleVar)
-
-      curveVertex(x + n, y + n)
-
+      shapeXs.push(x)
+      shapeYs.push(y)
+      shapeNs.push(n)
       if(random() > 0.75 - 0.25 * sin(r)){
-        endShape()
-        beginShape()
+        tree.rings.push({ shapeXs: shapeXs, shapeYs:shapeYs, shapeNs:shapeNs })
+        shapeXs = Array<number>()
+        shapeYs = Array<number>()
+        shapeNs = Array<number>()
       }
     }
-    endShape()
+    tree.rings.push({ shapeXs: shapeXs, shapeYs:shapeYs, shapeNs:shapeNs })
   }
+  tree.radius += newRadius
+  growth = 0
 }
 
 function calcProgressThruYear() {
@@ -95,19 +134,15 @@ function calcProgressThruYear() {
 function calcColorLerp(yearProg: number) {
   let seasonProg : number
   if (yearProg <= 0.25) {
-    // console.log("winter")
     seasonProg = yearProg / .25
     return lerpColor(winterSwatch, springSwatch, seasonProg)
   } else if (yearProg <= 0.50) {
-    // console.log("spring")
     seasonProg = (yearProg-0.25) / .25
     return lerpColor(springSwatch, summerSwatch, seasonProg)
   } else if (yearProg <= 0.75) {
-    // console.log("summer")
     seasonProg = (yearProg-0.5) / .25
     return lerpColor(summerSwatch, fallSwatch, seasonProg)
   } else {
-    // console.log("fall")
     return lerpColor(fallSwatch, winterSwatch, yearProg)
   }
 }
@@ -118,27 +153,28 @@ function draw() {
     let seasonProg = calcColorLerp(yearProg)
     background(seasonProg)
   } else {
-    let seasonProg = calcColorLerp(dummyMonth / 12)
+    let seasonProg = calcColorLerp(dummyMonth / monthsInYear)
     background(seasonProg)
   }
-  if (radius + 3.17057705e-8 * 5 < maxSize) {
-    radius += 3.17057705e-8 * 5
-  }
   growth += 3.17057705e-8
-  drawRings(startingYr + growth)
+  if (growth >= 1) {
+    // TODO: adjust to account for max size on screen
+    calcRings(growth, growth * 5)
+  }
+  drawRingsViaInterface()
 }
 
 function keyPressed() {
   dummyMonth ++
-  if (dummyMonth == 12) {
-    dummyYr++
+  if (dummyMonth == monthsInYear) {
     dummyMonth = 0
   }
-  let seasonProg = calcColorLerp(dummyMonth / 12)
+  let seasonProg = calcColorLerp(dummyMonth / monthsInYear)
   background(seasonProg)
-  growth += (dummyMonth / 12)
-  if (radius +  (5 / 12) < maxSize) {
-    radius += (5 / 12)
+  growth += (1 / monthsInYear)
+  console.log(growth)
+  if (growth >= 1) {
+    calcRings(growth, growth * 5)
   }
-  drawRings(startingYr + growth)
+  drawRingsViaInterface()
 }
