@@ -12,16 +12,13 @@ var springSwatch;
 var summerSwatch;
 var fallSwatch;
 var dummyMonth = 0;
-var tree = { rings: new Array(), startingYr: 2001, radius: 0 };
+var tree = { rings: new Array(), age: 21, radius: 0 };
 function calcRadiusPerRing() {
     return tree.radius / tree.rings.length;
 }
 function drawRingsViaInterface() {
-    var r = 0;
-    var radiusPerRing = calcRadiusPerRing();
     tree.rings.forEach(function (ring) {
         beginShape();
-        r += radiusPerRing;
         for (var i = 0; i < ring.shapeNs.length; i++) {
             curveVertex(ring.shapeXs[i] + ring.shapeNs[i], ring.shapeYs[i] + ring.shapeNs[i]);
             endShape();
@@ -49,9 +46,8 @@ function setup() {
         yearSelect.option(i.toString(), i);
     }
     yearSelect.changed(onYoBSelected);
-    startingYr = (year() - 2001);
-    var foo = startingYr * 5;
-    calcRings(startingYr, foo);
+    var foo = tree.age * 5;
+    calcRings(tree.age, foo);
     drawRingsViaInterface();
 }
 function windowResized() {
@@ -59,14 +55,16 @@ function windowResized() {
 }
 function onYoBSelected() {
     var yearSelected = yearSelect.value();
-    startingYr = year() - yearSelected;
-    if (startingYr * 5 >= maxSize / 2) {
-        var foo = startingYr * 3;
-        calcRings(startingYr, foo);
+    tree.age = year() - yearSelected;
+    tree.rings = Array();
+    tree.radius = 0;
+    if (tree.age * 5 >= maxSize / 2) {
+        var newRadius = tree.age * 4;
+        calcRings(tree.age, newRadius);
     }
     else {
-        var foo = startingYr * 5;
-        calcRings(startingYr, foo);
+        var newRadius = tree.age * 5;
+        calcRings(tree.age, newRadius);
     }
     drawRingsViaInterface();
 }
@@ -74,8 +72,6 @@ var scaleVar = 50;
 var resolution = 0.002;
 var numPoints = 500;
 function calcRings(numNewRings, newRadius) {
-    console.log(tree.radius);
-    console.log(newRadius);
     for (var r = tree.radius; r < tree.radius + newRadius; r += newRadius / numNewRings) {
         var shapeXs = Array();
         var shapeYs = Array();
@@ -135,7 +131,6 @@ function draw() {
     }
     growth += 3.17057705e-8;
     if (growth >= 1) {
-        console.log("hi");
         calcRings(growth, growth * 5);
     }
     drawRingsViaInterface();
@@ -150,7 +145,6 @@ function keyPressed() {
     growth += (1 / monthsInYear);
     console.log(growth);
     if (growth >= 1) {
-        console.log("asjdlfkds");
         calcRings(growth, growth * 5);
     }
     drawRingsViaInterface();

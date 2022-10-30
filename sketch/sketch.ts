@@ -24,23 +24,20 @@ interface Ring {
 
 interface Tree {
   rings: Array<Ring>
-  startingYr: number
+  age: number
   radius: number
 }
 
-let tree: Tree = {rings: new Array<Ring>(), startingYr: 2001, radius: 0}
+let tree: Tree = {rings: new Array<Ring>(), age: 21, radius: 0}
 
 function calcRadiusPerRing() {
   return tree.radius / tree.rings.length
 }
 
 function drawRingsViaInterface() {
-  let r = 0
-  let radiusPerRing = calcRadiusPerRing()
   tree.rings.forEach(ring => {
     //console.log(ring)
     beginShape()
-    r += radiusPerRing
     for (let i = 0; i < ring.shapeNs.length; i++) {
       //console.log(ring)
       curveVertex(ring.shapeXs[i] + ring.shapeNs[i], ring.shapeYs[i] + ring.shapeNs[i])
@@ -70,10 +67,9 @@ function setup() {
     yearSelect.option(i.toString(), i)
   }
   yearSelect.changed(onYoBSelected)
-  startingYr = (year() - 2001) 
-  let foo = startingYr * 5
+  let foo = tree.age * 5
   //console.log(radius)
-  calcRings(startingYr, foo)
+  calcRings(tree.age, foo)
   drawRingsViaInterface()
 }
 
@@ -83,13 +79,16 @@ function windowResized() {
 
 function onYoBSelected() {
   let yearSelected = yearSelect.value() as number
-  startingYr = year() - yearSelected
-  if (startingYr * 5 >= maxSize / 2) {
-    let foo = startingYr * 3
-    calcRings(startingYr, foo)
+  tree.age = year() - yearSelected
+  tree.rings = Array<Ring>()
+  tree.radius = 0
+  // TODO: how can I calculate radius as a ratio of both age and maxSize?
+  if (tree.age * 5 >= maxSize / 2) {
+    let newRadius = tree.age * 4
+    calcRings(tree.age, newRadius)
   } else {
-    let foo = startingYr * 5
-    calcRings(startingYr, foo)
+    let newRadius = tree.age * 5
+    calcRings(tree.age, newRadius)
   }
   drawRingsViaInterface()
 }
