@@ -1,11 +1,14 @@
-var startingYr;
 var growth = 0;
 var maxSize;
+var story;
+var timing;
 var yearSelect;
+var font;
 var userPromptedInputButton;
 var completedUserPromptedInput;
-var inputOptions = new Array("It's been a difficult season...", "Lots of growth lately!");
+var inputOptions = new Array("The seasons have not been kind; the tree's limbs ache under their own weight", "The sky seems closer lately", "Can you hear the birds roosting in the branches?", "Look how the wind plucks the leaves from their branches");
 var inputOptionsCheckBoxes = new Array();
+var givenUserInput = new Array();
 var monthsInYear = 12;
 var daysInMonth = new Map([[1, 31], [2, 28], [3, 31], [4, 30], [5, 31], [6, 30], [7, 31], [8, 31], [9, 30], [10, 31], [11, 30], [12, 31]]);
 var hoursInDay = 24;
@@ -17,7 +20,23 @@ var summerSwatch;
 var fallSwatch;
 var dummyMonth = 0;
 var tree = { rings: new Array(), age: 21, radius: 0 };
+var stories = new Array();
+function preload() {
+    story = loadTable('../tree_story.csv', 'header');
+    timing = loadTable('../tree_story_timing.csv', 'header');
+    font = loadFont('../IMFellDWPica-Italic.ttf');
+}
+function setupStory(story, timing) {
+    story.columns.forEach(function (value) {
+        var col = story.getColumn(value);
+        var filteredCol = col.filter(function (i) { return i; });
+        var numYrs = parseInt(timing.getColumn(value)[0]);
+        stories.push({ name: value, text: filteredCol, numYrsPerCycle: numYrs });
+    });
+    console.log(stories);
+}
 function setup() {
+    setupStory(story, timing);
     winterSwatch = color(201, 227, 247);
     springSwatch = color(216, 233, 221);
     summerSwatch = color(239, 230, 234);
@@ -32,7 +51,10 @@ function setup() {
     stroke(20);
     strokeWeight(1);
     noFill();
-    userPromptedInputButton = createButton("Share something with the tree", 0);
+    textAlign(CENTER, TOP);
+    textSize(maxSize / 40);
+    textFont(font);
+    userPromptedInputButton = createButton("Share something with the tree...", "checkboxes hidden");
     userPromptedInputButton.position(10, 30);
     userPromptedInputButton.mousePressed(onInputButtonPressed);
     yearSelect = createSelect();
@@ -44,9 +66,9 @@ function setup() {
     var foo = tree.age * 5;
     calcRings(tree.age, foo);
     drawRingsViaInterface();
+    handleStory();
 }
 function windowResized() {
-    resizeCanvas(windowWidth, windowHeight);
 }
 function calcRadiusPerRing() {
     return tree.radius / tree.rings.length;
@@ -59,6 +81,22 @@ function drawRingsViaInterface() {
             endShape();
         }
     });
+}
+function handleStory() {
+    var minAbsVal = Infinity;
+    var display;
+    stories.forEach(function (value) {
+        var storyByMonths = value.text.length / (value.numYrsPerCycle * 12);
+        var storyIdx = (((tree.age + growth) * 12) * storyByMonths) % (value.numYrsPerCycle * 12);
+        var dist = Math.abs(Math.round(storyIdx) - storyIdx);
+        if (dist < minAbsVal) {
+            minAbsVal = dist;
+            display = value.text[Math.round(storyIdx)];
+        }
+    });
+    fill(20);
+    text(display, width / 4, height / 20, width / 2);
+    noFill();
 }
 function setupCheckboxes() {
     userPromptedInputButton.hide();
@@ -89,6 +127,7 @@ function hideCheckboxes() {
 }
 function onYoBSelected() {
     var yearSelected = yearSelect.value();
+    yearSelect.remove();
     tree.age = year() - yearSelected;
     tree.rings = Array();
     tree.radius = 0;
@@ -104,14 +143,16 @@ function onYoBSelected() {
 }
 function onInputButtonPressed() {
     console.log(userPromptedInputButton);
-    if (userPromptedInputButton.value() == 0) {
+    if (userPromptedInputButton.value() == "checkboxes hidden") {
         setupCheckboxes();
-        userPromptedInputButton.value(1);
+        userPromptedInputButton.value("checkboxes shown");
     }
     else {
         hideCheckboxes();
-        userPromptedInputButton.value(0);
+        userPromptedInputButton.value("checkboxes hidden");
     }
+}
+function parseUserInputFromCheckboxes() {
 }
 var scaleVar = 50;
 var resolution = 0.002;
@@ -179,6 +220,7 @@ function draw() {
         calcRings(growth, growth * 5);
     }
     drawRingsViaInterface();
+    handleStory();
 }
 function keyPressed() {
     dummyMonth++;
@@ -188,10 +230,10 @@ function keyPressed() {
     var seasonProg = calcColorLerp(dummyMonth / monthsInYear);
     background(seasonProg);
     growth += (1 / monthsInYear);
-    console.log(growth);
     if (growth >= 1) {
         calcRings(growth, growth * 5);
     }
     drawRingsViaInterface();
+    handleStory();
 }
 //# sourceMappingURL=build.js.map

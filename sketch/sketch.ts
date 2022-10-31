@@ -1,14 +1,16 @@
 // Starting point/reference: https://gorillasun.de/blog/radial-perlin-noise-and-generative-tree-rings
 
-let startingYr : number
 let growth : number = 0
 let maxSize : number
-//let radius : number
+let story: p5.Table
+let timing: p5.Table
 let yearSelect : p5.Element
+let font : p5.Font
 let userPromptedInputButton: p5.Element
 let completedUserPromptedInput : p5.Element
-const inputOptions: Array<string> = new Array<string>("It's been a difficult season...", "Lots of growth lately!")
+const inputOptions: Array<string> = new Array<string>("The seasons have not been kind; the tree's limbs ache under their own weight", "The sky seems closer lately", "Can you hear the birds roosting in the branches?", "Look how the wind plucks the leaves from their branches")
 let inputOptionsCheckBoxes: Array<p5.Element> = new Array<p5.Element>()
+let givenUserInput: Array<boolean> = new Array<boolean>()
 const monthsInYear = 12
 const daysInMonth : Map<number, number> = new Map<number, number>([[1, 31], [2, 28], [3, 31], [4, 30], [5, 31], [6, 30], [7, 31], [8, 31], [9, 30], [10, 31], [11, 30], [12, 31]])
 const hoursInDay = 24
@@ -19,6 +21,12 @@ let springSwatch: p5.Color
 let summerSwatch: p5.Color
 let fallSwatch: p5.Color
 let dummyMonth = 0
+
+interface Story {
+  name: string
+  numYrsPerCycle: number
+  text: Array<string>
+}
 
 interface Ring {
   shapeXs: Array<number>
@@ -33,9 +41,26 @@ interface Tree {
 }
 
 let tree: Tree = {rings: new Array<Ring>(), age: 21, radius: 0}
+let stories = new Array<Story>()
 
+function preload() {
+  story = loadTable('../tree_story.csv', 'header') as p5.Table
+  timing = loadTable('../tree_story_timing.csv', 'header') as p5.Table
+  font = loadFont('../IMFellDWPica-Italic.ttf')
+}
+
+function setupStory(story: p5.Table, timing: p5.Table){
+  story.columns.forEach((value) => {
+    let col = story.getColumn(value)
+    let filteredCol = col.filter(i => i)
+    let numYrs = parseInt(timing.getColumn(value)[0])
+    stories.push({ name: value, text: filteredCol, numYrsPerCycle: numYrs })
+  })
+  console.log(stories)
+}
 
 function setup() {
+  setupStory(story, timing)
   winterSwatch = color(201, 227, 247)
   springSwatch = color(216, 233, 221)
   summerSwatch = color(239, 230, 234)
@@ -50,7 +75,10 @@ function setup() {
   stroke(20)
   strokeWeight(1)
   noFill()
-  userPromptedInputButton = createButton("Share something with the tree", 0)
+  textAlign(CENTER, TOP)
+  textSize(maxSize/40)
+  textFont(font)
+  userPromptedInputButton = createButton("Share something with the tree...", "checkboxes hidden")
   userPromptedInputButton.position(10, 30)
   userPromptedInputButton.mousePressed(onInputButtonPressed)
   yearSelect = createSelect()
@@ -63,10 +91,12 @@ function setup() {
   //console.log(radius)
   calcRings(tree.age, foo)
   drawRingsViaInterface()
+  handleStory()
 }
 
 function windowResized() { 
-  resizeCanvas(windowWidth, windowHeight); 
+  // resizeCanvas(windowWidth, windowHeight)
+  // TODO: make tree ring positioning responsive? store canvas dims and w new window sz?
 }
 
 function calcRadiusPerRing() {
@@ -83,6 +113,23 @@ function drawRingsViaInterface() {
       endShape()
   }
 })
+}
+
+function handleStory() {
+  let minAbsVal = Infinity
+  let display : string
+  stories.forEach(value => {
+    let storyByMonths = value.text.length / (value.numYrsPerCycle * 12)
+    let storyIdx = (((tree.age + growth) * 12) * storyByMonths) % (value.numYrsPerCycle * 12)
+    let dist = Math.abs(Math.round(storyIdx) - storyIdx)
+    if (dist < minAbsVal) {
+      minAbsVal = dist
+      display = value.text[Math.round(storyIdx)]
+    }
+  })
+  fill(20)
+  text(display, width/4, height/20, width/2)
+  noFill()
 }
 
 function setupCheckboxes() {
@@ -116,6 +163,7 @@ function hideCheckboxes() {
 
 function onYoBSelected() {
   let yearSelected = yearSelect.value() as number
+  yearSelect.remove()
   tree.age = year() - yearSelected
   tree.rings = Array<Ring>()
   tree.radius = 0
@@ -132,16 +180,18 @@ function onYoBSelected() {
 
 function onInputButtonPressed() {
   console.log(userPromptedInputButton)
-  if (userPromptedInputButton.value() == 0) {
+  if (userPromptedInputButton.value() == "checkboxes hidden") {
     setupCheckboxes()
-    userPromptedInputButton.value(1)
+    userPromptedInputButton.value("checkboxes shown")
   } else {
     hideCheckboxes()
-    userPromptedInputButton.value(0)
+    userPromptedInputButton.value("checkboxes hidden")
   }
-  
 }
 
+function parseUserInputFromCheckboxes() {
+ // TODO
+}
 
 let scaleVar = 50
 let resolution = 0.002
@@ -210,6 +260,7 @@ function draw() {
     calcRings(growth, growth * 5)
   }
   drawRingsViaInterface()
+  handleStory()
 }
 
 function keyPressed() {
@@ -220,9 +271,9 @@ function keyPressed() {
   let seasonProg = calcColorLerp(dummyMonth / monthsInYear)
   background(seasonProg)
   growth += (1 / monthsInYear)
-  console.log(growth)
   if (growth >= 1) {
     calcRings(growth, growth * 5)
   }
   drawRingsViaInterface()
+  handleStory()
 }
