@@ -2,6 +2,10 @@ var startingYr;
 var growth = 0;
 var maxSize;
 var yearSelect;
+var userPromptedInputButton;
+var completedUserPromptedInput;
+var inputOptions = new Array("It's been a difficult season...", "Lots of growth lately!");
+var inputOptionsCheckBoxes = new Array();
 var monthsInYear = 12;
 var daysInMonth = new Map([[1, 31], [2, 28], [3, 31], [4, 30], [5, 31], [6, 30], [7, 31], [8, 31], [9, 30], [10, 31], [11, 30], [12, 31]]);
 var hoursInDay = 24;
@@ -13,18 +17,6 @@ var summerSwatch;
 var fallSwatch;
 var dummyMonth = 0;
 var tree = { rings: new Array(), age: 21, radius: 0 };
-function calcRadiusPerRing() {
-    return tree.radius / tree.rings.length;
-}
-function drawRingsViaInterface() {
-    tree.rings.forEach(function (ring) {
-        beginShape();
-        for (var i = 0; i < ring.shapeNs.length; i++) {
-            curveVertex(ring.shapeXs[i] + ring.shapeNs[i], ring.shapeYs[i] + ring.shapeNs[i]);
-            endShape();
-        }
-    });
-}
 function setup() {
     winterSwatch = color(201, 227, 247);
     springSwatch = color(216, 233, 221);
@@ -40,6 +32,9 @@ function setup() {
     stroke(20);
     strokeWeight(1);
     noFill();
+    userPromptedInputButton = createButton("Share something with the tree", 0);
+    userPromptedInputButton.position(10, 30);
+    userPromptedInputButton.mousePressed(onInputButtonPressed);
     yearSelect = createSelect();
     yearSelect.position(10, 10);
     for (var i = year() - 100; i <= year(); i++) {
@@ -52,6 +47,45 @@ function setup() {
 }
 function windowResized() {
     resizeCanvas(windowWidth, windowHeight);
+}
+function calcRadiusPerRing() {
+    return tree.radius / tree.rings.length;
+}
+function drawRingsViaInterface() {
+    tree.rings.forEach(function (ring) {
+        beginShape();
+        for (var i = 0; i < ring.shapeNs.length; i++) {
+            curveVertex(ring.shapeXs[i] + ring.shapeNs[i], ring.shapeYs[i] + ring.shapeNs[i]);
+            endShape();
+        }
+    });
+}
+function setupCheckboxes() {
+    userPromptedInputButton.hide();
+    if (inputOptionsCheckBoxes.length == inputOptions.length) {
+        inputOptionsCheckBoxes.forEach(function (value) {
+            value.show();
+        });
+        completedUserPromptedInput.show();
+        return;
+    }
+    var pos = 50;
+    inputOptions.forEach(function (value, index) {
+        console.log(value);
+        inputOptionsCheckBoxes.push(createCheckbox(value));
+        inputOptionsCheckBoxes[index].position(10, pos);
+        pos += 20;
+    });
+    completedUserPromptedInput = createButton("All done for now");
+    completedUserPromptedInput.mousePressed(onInputButtonPressed);
+    completedUserPromptedInput.position(10, pos);
+}
+function hideCheckboxes() {
+    inputOptionsCheckBoxes.forEach(function (value) {
+        value.hide();
+    });
+    completedUserPromptedInput.hide();
+    userPromptedInputButton.show();
 }
 function onYoBSelected() {
     var yearSelected = yearSelect.value();
@@ -67,6 +101,17 @@ function onYoBSelected() {
         calcRings(tree.age, newRadius);
     }
     drawRingsViaInterface();
+}
+function onInputButtonPressed() {
+    console.log(userPromptedInputButton);
+    if (userPromptedInputButton.value() == 0) {
+        setupCheckboxes();
+        userPromptedInputButton.value(1);
+    }
+    else {
+        hideCheckboxes();
+        userPromptedInputButton.value(0);
+    }
 }
 var scaleVar = 50;
 var resolution = 0.002;

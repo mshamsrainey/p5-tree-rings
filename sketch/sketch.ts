@@ -5,6 +5,10 @@ let growth : number = 0
 let maxSize : number
 //let radius : number
 let yearSelect : p5.Element
+let userPromptedInputButton: p5.Element
+let completedUserPromptedInput : p5.Element
+const inputOptions: Array<string> = new Array<string>("It's been a difficult season...", "Lots of growth lately!")
+let inputOptionsCheckBoxes: Array<p5.Element> = new Array<p5.Element>()
 const monthsInYear = 12
 const daysInMonth : Map<number, number> = new Map<number, number>([[1, 31], [2, 28], [3, 31], [4, 30], [5, 31], [6, 30], [7, 31], [8, 31], [9, 30], [10, 31], [11, 30], [12, 31]])
 const hoursInDay = 24
@@ -30,21 +34,6 @@ interface Tree {
 
 let tree: Tree = {rings: new Array<Ring>(), age: 21, radius: 0}
 
-function calcRadiusPerRing() {
-  return tree.radius / tree.rings.length
-}
-
-function drawRingsViaInterface() {
-  tree.rings.forEach(ring => {
-    //console.log(ring)
-    beginShape()
-    for (let i = 0; i < ring.shapeNs.length; i++) {
-      //console.log(ring)
-      curveVertex(ring.shapeXs[i] + ring.shapeNs[i], ring.shapeYs[i] + ring.shapeNs[i])
-      endShape()
-  }
-})
-}
 
 function setup() {
   winterSwatch = color(201, 227, 247)
@@ -61,6 +50,9 @@ function setup() {
   stroke(20)
   strokeWeight(1)
   noFill()
+  userPromptedInputButton = createButton("Share something with the tree", 0)
+  userPromptedInputButton.position(10, 30)
+  userPromptedInputButton.mousePressed(onInputButtonPressed)
   yearSelect = createSelect()
   yearSelect.position(10,10)
   for (let i = year() - 100; i <= year(); i++) {
@@ -77,6 +69,51 @@ function windowResized() {
   resizeCanvas(windowWidth, windowHeight); 
 }
 
+function calcRadiusPerRing() {
+  return tree.radius / tree.rings.length
+}
+
+function drawRingsViaInterface() {
+  tree.rings.forEach(ring => {
+    //console.log(ring)
+    beginShape()
+    for (let i = 0; i < ring.shapeNs.length; i++) {
+      //console.log(ring)
+      curveVertex(ring.shapeXs[i] + ring.shapeNs[i], ring.shapeYs[i] + ring.shapeNs[i])
+      endShape()
+  }
+})
+}
+
+function setupCheckboxes() {
+  userPromptedInputButton.hide()
+  if (inputOptionsCheckBoxes.length == inputOptions.length) {
+    inputOptionsCheckBoxes.forEach((value) => {
+      value.show()
+    })
+    completedUserPromptedInput.show()
+    return
+  }
+  let pos = 50
+  inputOptions.forEach((value, index) => {
+    console.log(value)
+    inputOptionsCheckBoxes.push(createCheckbox(value))
+    inputOptionsCheckBoxes[index].position(10, pos)
+    pos += 20
+  })
+  completedUserPromptedInput = createButton("All done for now")
+    completedUserPromptedInput.mousePressed(onInputButtonPressed)
+    completedUserPromptedInput.position(10, pos)
+}
+
+function hideCheckboxes() {
+  inputOptionsCheckBoxes.forEach((value) => {
+    value.hide()
+  })
+  completedUserPromptedInput.hide()
+  userPromptedInputButton.show()
+}
+
 function onYoBSelected() {
   let yearSelected = yearSelect.value() as number
   tree.age = year() - yearSelected
@@ -91,6 +128,18 @@ function onYoBSelected() {
     calcRings(tree.age, newRadius)
   }
   drawRingsViaInterface()
+}
+
+function onInputButtonPressed() {
+  console.log(userPromptedInputButton)
+  if (userPromptedInputButton.value() == 0) {
+    setupCheckboxes()
+    userPromptedInputButton.value(1)
+  } else {
+    hideCheckboxes()
+    userPromptedInputButton.value(0)
+  }
+  
 }
 
 
